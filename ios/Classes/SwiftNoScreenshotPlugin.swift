@@ -6,6 +6,7 @@ public class SwiftNoScreenshotPlugin: NSObject, FlutterPlugin {
     private var screenProtectorKit: ScreenProtectorKit? = nil
     private static var channel: FlutterMethodChannel? = nil
     static private var preventScreenShot: Bool = false
+    private var screenBlur: UIView? = nil
 
     init(screenProtectorKit: ScreenProtectorKit) {
         self.screenProtectorKit = screenProtectorKit
@@ -25,18 +26,16 @@ public class SwiftNoScreenshotPlugin: NSObject, FlutterPlugin {
     }
 
     public func applicationWillResignActive(_ application: UIApplication) {
-        if SwiftNoScreenshotPlugin.preventScreenShot == true {
-            screenProtectorKit?.enabledPreventScreenshot()
-        } else if SwiftNoScreenshotPlugin.preventScreenShot == false {
+        if SwiftNoScreenshotPlugin.preventScreenShot == false {
             screenProtectorKit?.disablePreventScreenshot()
+            enableBlurScreen()
         }
     }
 
     public func applicationDidBecomeActive(_ application: UIApplication) {
-        if SwiftNoScreenshotPlugin.preventScreenShot == true {
+        if SwiftNoScreenshotPlugin.preventScreenShot == false {
+            disableBlurScreen()
             screenProtectorKit?.enabledPreventScreenshot()
-        } else if SwiftNoScreenshotPlugin.preventScreenShot == false {
-            screenProtectorKit?.disablePreventScreenshot()
         }
     }
 
@@ -62,6 +61,24 @@ public class SwiftNoScreenshotPlugin: NSObject, FlutterPlugin {
 
     private func shotOn() {
         screenProtectorKit?.disablePreventScreenshot()
+    }
+    
+    private func enableBlurScreen() {
+        guard screenBlur == nil else {
+            return
+        }
+                
+        screenBlur = UIScreen.main.snapshotView(afterScreenUpdates: true)
+        let blurEffect = UIBlurEffect(style: UIBlurEffect.Style.systemUltraThinMaterial)
+        let blurBackground = UIVisualEffectView(effect: blurEffect)
+        screenBlur?.addSubview(blurBackground)
+        blurBackground.frame = (screenBlur?.frame)!
+        UIApplication.shared.delegate?.window??.addSubview(screenBlur!)
+    }
+    
+    private func disableBlurScreen() {
+        screenBlur?.removeFromSuperview()
+        screenBlur = nil
     }
 
     deinit {
